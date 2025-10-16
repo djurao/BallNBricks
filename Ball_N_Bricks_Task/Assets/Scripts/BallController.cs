@@ -3,7 +3,8 @@ using UnityEngine;
 
 public class BallController : MonoBehaviour
 {
-    public float launchForce = 10f;
+    public float launchForce;
+    public float maxLaunchForcse = 10f;
     public Rigidbody2D rb;
     public Transform ballSpawnPosition;
     public float rotationSpeed = 5f;
@@ -19,6 +20,8 @@ public class BallController : MonoBehaviour
     private int pathPointCount;
     private const int maxPathPoints = 100;
     private const float minUpdateInterval = 0.1f;
+    public SpriteRenderer powerUpSpriteRenderer;
+    public float powerRefillRate;
     private void Start()
     {
         lineRenderer.positionCount = 1;
@@ -28,7 +31,7 @@ public class BallController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetMouseButtonUp(0))
         {
             LaunchBall();
         }
@@ -36,8 +39,28 @@ public class BallController : MonoBehaviour
         {
             ResetBall();
         }
-
-        RotateBallTowardsMouse();
+        if (Input.GetMouseButtonDown(0))
+        {
+            launchForce = 0f;
+            Color alpha = powerUpSpriteRenderer.color;
+            alpha.a = 0;
+            powerUpSpriteRenderer.color = alpha;
+            powerUpSpriteRenderer.transform.localScale = Vector3.zero;
+        }
+        if (Input.GetMouseButton(0))
+        {
+            if (launchForce < maxLaunchForcse) 
+            {
+                launchForce += powerRefillRate * Time.deltaTime;
+                var relativePower = launchForce / maxLaunchForcse;
+                Color alpha = powerUpSpriteRenderer.color;
+                alpha.a = relativePower;
+                powerUpSpriteRenderer.color = alpha;
+                powerUpSpriteRenderer.transform.localScale = Vector3.one * relativePower;
+            }
+            RotateBallTowardsMouse();
+        }
+        
 
   
     }
