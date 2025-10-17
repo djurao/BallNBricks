@@ -3,43 +3,28 @@ using UnityEngine;
 
 public class BallController : MonoBehaviour
 {
-    public float launchForce;
-    public float maxLaunchForcse = 10f;
+   
     public Rigidbody2D rb;
     public Transform ballSpawnPosition;
-    public float rotationSpeed = 5f;
-    public float initialSpeed = 10f;
-    public int maxBounces = 5;
-    public float maxRayDistance = 100f;
     public LineRenderer lineRenderer;
-    private float lastUpdateTime = 0f;
-    private const float updateInterval = 0.1f;
-    private Vector2 lastPredictionDirection;
-    private const float directionThreshold = 0.01f;
-    private Vector3[] pathPoints;
-    private int pathPointCount;
-    private const int maxPathPoints = 100;
-    private const float minUpdateInterval = 0.1f;
     public SpriteRenderer powerUpSpriteRenderer;
+
+    public int maxBounces = 5;
+    public float launchForce;
+    public float maxLaunchForcse = 10f;
     public float powerRefillRate;
+    public float rotationSpeed = 5f;
+    private bool MouseHeld => Input.GetMouseButton(0);
+    private bool MouseReleased => Input.GetMouseButtonUp(0);
+    private bool MousePressed => Input.GetMouseButtonDown(0);
     private void Start()
     {
         lineRenderer.positionCount = 1;
         lineRenderer.SetPosition(0, rb.transform.position);
-
     }
-
-    private void Update()
+    private void HandleMouseInputs() 
     {
-        if (Input.GetMouseButtonUp(0))
-        {
-            LaunchBall();
-        }
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            ResetBall();
-        }
-        if (Input.GetMouseButtonDown(0))
+        if (MousePressed)
         {
             launchForce = 0f;
             Color alpha = powerUpSpriteRenderer.color;
@@ -47,9 +32,9 @@ public class BallController : MonoBehaviour
             powerUpSpriteRenderer.color = alpha;
             powerUpSpriteRenderer.transform.localScale = Vector3.zero;
         }
-        if (Input.GetMouseButton(0))
+        if (MouseHeld)
         {
-            if (launchForce < maxLaunchForcse) 
+            if (launchForce < maxLaunchForcse)
             {
                 launchForce += powerRefillRate * Time.deltaTime;
                 var relativePower = launchForce / maxLaunchForcse;
@@ -60,24 +45,30 @@ public class BallController : MonoBehaviour
             }
             RotateBallTowardsMouse();
         }
-        
-
-  
-    }
-    private void DrawDebugLines(List<Vector2> points)
-    {
-        for (int i = 0; i < points.Count - 1; i++)
+        if (MouseReleased)
         {
-            Debug.DrawLine(points[i], points[i + 1], Color.yellow, Time.deltaTime);
+            LaunchBall();
         }
     }
+    private void HandleKeyboardInputs()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            ResetBall();
+        }
+    }
+    private void Update()
+    {
+        HandleMouseInputs();
+        HandleKeyboardInputs();
+    }
+   
     public void LaunchBall()
     {
         Vector2 launchDirection = rb.transform.up;
         rb.AddForce(launchDirection * launchForce, ForceMode2D.Impulse);
         lineRenderer.positionCount = 0;
     }
-
     private void ResetBall()
     {
         rb.linearVelocity = Vector2.zero;
@@ -93,5 +84,4 @@ public class BallController : MonoBehaviour
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
         rb.rotation = Mathf.LerpAngle(rb.rotation, angle, rotationSpeed * Time.deltaTime);
     }
-
 }
