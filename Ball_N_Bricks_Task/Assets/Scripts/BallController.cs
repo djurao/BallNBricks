@@ -62,7 +62,6 @@ public class BallController : MonoBehaviour
         HandleMouseInputs();
         HandleKeyboardInputs();
     }
-   
     public void LaunchBall()
     {
         Vector2 launchDirection = rb.transform.up;
@@ -76,7 +75,6 @@ public class BallController : MonoBehaviour
         rb.position = ballSpawnPosition.position;
         rb.rotation = -45f;
     }
-
     void RotateBallTowardsMouse()
     {
         Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, Mathf.Abs(Camera.main.transform.position.z)));
