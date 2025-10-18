@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(LineRenderer))]
 public partial class BallController
 {
     [Header("Trajectory (Prediction)")] public LineRenderer trajectoryLine;
@@ -18,21 +17,10 @@ public partial class BallController
     private const float DefaultIntersectionEpsilon = 1e-6f;
     private const float DefaultVelocityEpsilon = 1e-8f;
 
-    void Awake()
-    {
-        if (trajectoryLine == null) trajectoryLine = GetComponent<LineRenderer>();
-        if (trajectoryLine != null)
-        {
-            trajectoryLine.useWorldSpace = true;
-            trajectoryLine.positionCount = 0;
-        }
-    }
 
     public void UpdateTrajectoryIfNeeded()
     {
-        if (trajectoryLine == null) trajectoryLine = GetComponent<LineRenderer>();
-        if (trajectoryLine == null) return;
-
+       
         if (MouseHeld)
             DrawTrajectory();
         else
