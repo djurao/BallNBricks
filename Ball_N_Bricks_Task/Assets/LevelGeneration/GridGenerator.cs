@@ -35,6 +35,7 @@ namespace LevelGeneration
                 for (var y = 0; y < rows; y++)
                 {
                     var cell = grid[x, y];
+                    print(cell.ToString());
                     for (int i = 0; i < brickDefinitions.Count; i++)
                     {
                         if (cell == brickDefinitions[i].samplingIdentifier)

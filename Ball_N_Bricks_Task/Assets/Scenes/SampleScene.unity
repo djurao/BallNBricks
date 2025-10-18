@@ -848,12 +848,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2326017c8a7b997429cace260ea11aed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentLevel: 0
+  currentLevel: 2
   levelTextures:
+  - {fileID: 2800000, guid: 10636f79ab21efe48a174ff93acbfc0a, type: 3}
   - {fileID: 2800000, guid: a5c406e4d0175634b82951725cee62de, type: 3}
+  - {fileID: 2800000, guid: 233ec8968cb8e2b438fd7256271645b6, type: 3}
+  - {fileID: 2800000, guid: cc275c27ac5651e45a9983934298dc96, type: 3}
+  - {fileID: 2800000, guid: 133b727f43d3cf449a563beb8c6f898a, type: 3}
   brickDefinitions:
   - brickPrefab: {fileID: 8417230167263135731, guid: e4cf2368f6cb30f45ba51e28ae277b25, type: 3}
     samplingIdentifier: {r: 0, g: 0, b: 0, a: 1}
+  - brickPrefab: {fileID: 8417230167263135731, guid: e259439b88d7ac64f8186dafc34775bd, type: 3}
+    samplingIdentifier: {r: 1, g: 0, b: 0, a: 1}
   cellSize: {x: 3, y: 1.5}
   verticalBrickLayoutPosition: -5
 --- !u!4 &755428087
