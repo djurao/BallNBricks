@@ -2,119 +2,193 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
-public class TrajectoryPrediction2D : MonoBehaviour
+public partial class BallController
 {
-    public BallController ballController;           // auto-find if null
-    public LineRenderer lineRenderer;               // auto-get if null
-    public int maxBounces = 5;
-    public int maxSegments = 200;
-    public LayerMask collisionMask = ~0;
-    public float skinDistance = 0.02f;
-    public float maxDistancePerCast = 50f;
-    public Color debugCastColor = Color.yellow;
-    public Color debugHitColor = Color.red;
-    public Color debugNormalColor = Color.cyan;
-    public bool runDebugTests = true;               // enable debug test outputs
+    [Header("Trajectory (Prediction)")] public LineRenderer trajectoryLine;
+    public int trajectoryMaxBounces = 10;
+    public int trajectoryMaxSegments = 200;
+    public float trajectorySkinDistance = 0.02f;
+    public bool trajectoryDebugLogs = false;
+
     void Awake()
     {
-        lineRenderer.positionCount = 0;
-        lineRenderer.useWorldSpace = true;
+        if (trajectoryLine == null) trajectoryLine = GetComponent<LineRenderer>();
+        if (trajectoryLine != null)
+        {
+            trajectoryLine.useWorldSpace = true;
+            trajectoryLine.positionCount = 0;
+        }
     }
 
-    void Update()
+    public void UpdateTrajectoryIfNeeded()
     {
-        if (ballController == null) return;
-        if (Input.GetMouseButton(0))
-            DrawPrediction();
+        if (trajectoryLine == null) trajectoryLine = GetComponent<LineRenderer>();
+        if (trajectoryLine == null) return;
+
+        if (MouseHeld)
+            DrawTrajectory();
         else
-            lineRenderer.positionCount = 0;
+            trajectoryLine.positionCount = 0;
     }
 
-    void DrawPrediction()
+    void DrawTrajectory()
     {
-        List<Vector3> points = new List<Vector3>();
-        Vector2 startPos2 = ballController.rb.position;
-        Vector3 startPos = new Vector3(startPos2.x, startPos2.y, 0f);
-        Vector2 dir2 = ballController.rb.transform.up;
-        dir2.Normalize();
-        float launchForce = ballController.launchForce;
+        if (ballTransform == null || playAreaCollider == null)
+        {
+            trajectoryLine.positionCount = 0;
+            return;
+        }
 
-        // initial velocity from impulse: v = impulse / mass
-        float mass = Mathf.Max(1e-4f, ballController.rb.mass);
-        Vector2 velocity2 = dir2 * (launchForce / mass);
+        var points = new List<Vector3>();
+        float planeZ = ballTransform.position.z;
 
-        Vector2 gravityPerSecond = Physics2D.gravity * ballController.rb.gravityScale;
+        Vector2 ballCenter = GetBallWorldCenter();
+        float radius = GetBallWorldRadius();
 
-        // get ball radius from CircleCollider2D
-        float radius = 0f;
-        CircleCollider2D cc = ballController.GetComponent<CircleCollider2D>();
-        if (cc != null) radius = cc.radius * Mathf.Max(ballController.rb.transform.lossyScale.x, ballController.rb.transform.lossyScale.y);
-        if (radius <= 0f) radius = 0.1f; // fallback for testing
+        Bounds b = playAreaCollider.bounds;
+        float inset = radius;
+        float minX = b.min.x + inset;
+        float maxX = b.max.x - inset;
+        float minY = b.min.y + inset;
+        float maxY = b.max.y - inset;
 
-        points.Add(startPos);
-        Vector2 currentPos2 = startPos2;
-        Vector2 currentVel2 = velocity2;
-        int bouncesLeft = maxBounces;
+        Vector2 initialVel = launchVelocity;
+        if (initialVel.sqrMagnitude < 1e-8f) initialVel = EstimateVelocityFromCharge();
+
+        points.Add(new Vector3(ballCenter.x, ballCenter.y, planeZ));
+
+        Vector2 pos = ballCenter;
+        Vector2 vel = initialVel;
+        int bouncesLeft = Mathf.Max(0, trajectoryMaxBounces);
         int segments = 1;
 
-        while (bouncesLeft >= 0 && segments < maxSegments)
+        while (bouncesLeft >= 0 && segments < trajectoryMaxSegments)
         {
-            if (currentVel2.sqrMagnitude < 1e-8f) break;
-            float speed = currentVel2.magnitude;
-            if (speed < 1e-6f) break;
+            if (vel.sqrMagnitude < 1e-8f) break;
 
-            float castDistance = Mathf.Min(maxDistancePerCast, speed * 5f + 1f);
-            Vector2 castDir = currentVel2.normalized;
-
-            var allHits = Physics2D.CircleCastAll(currentPos2, radius, castDir, castDistance, collisionMask);
-            RaycastHit2D chosen = new RaycastHit2D();
-            float bestDist = float.MaxValue;
-            foreach (var h in allHits)
+            Vector2 dir = vel.normalized;
+            if (!ComputeNearestBoxIntersection(pos, dir, minX, maxX, minY, maxY, out Vector2 hitPoint,
+                    out Vector2 hitNormal, out float t))
             {
-                if (h.collider == null) continue;
-                if (h.collider.gameObject == ballController.gameObject) continue;
-                if (h.collider.isTrigger) continue;
-                if (h.distance > 0.0001f && h.distance < bestDist)
-                {
-                    bestDist = h.distance;
-                    chosen = h;
-                }
+                Vector2 end = pos + dir * 5f;
+                points.Add(new Vector3(end.x, end.y, planeZ));
+                break;
             }
 
-            if (bestDist == float.MaxValue)
-            {
-                // no valid hit found: advance to endpoint
-                Vector2 endPos2 = currentPos2 + castDir * castDistance;
-                points.Add(new Vector3(endPos2.x, endPos2.y, 0f));
-                segments++;
+            hitPoint.x = Mathf.Clamp(hitPoint.x, minX, maxX);
+            hitPoint.y = Mathf.Clamp(hitPoint.y, minY, maxY);
 
-                float dt = castDistance / Mathf.Max(1e-6f, currentVel2.magnitude);
-                currentVel2 += gravityPerSecond * dt;
-                currentPos2 = endPos2;
-                continue;
-            }
-            Vector2 hitPoint2 = chosen.point;
-            points.Add(new Vector3(hitPoint2.x, hitPoint2.y, 0f));
+            points.Add(new Vector3(hitPoint.x, hitPoint.y, planeZ));
             segments++;
 
-            float distToHit = Vector2.Distance(currentPos2, hitPoint2);
-            float dtHit = (currentVel2.magnitude > 1e-6f) ? distToHit / currentVel2.magnitude : 0f;
-            Vector2 velAtImpact2 = currentVel2 + gravityPerSecond * dtHit;
+            float speed = vel.magnitude;
+            Vector2 reflectedDir = Vector2.Reflect(vel.normalized, hitNormal);
+            float rest = Mathf.Clamp01(restitution);
+            vel = reflectedDir * speed * rest;
 
-            float bounciness = 1f;
-            if (chosen.collider != null && chosen.collider.sharedMaterial != null) bounciness *= chosen.collider.sharedMaterial.bounciness;
-            Collider2D ballCol = ballController.GetComponent<Collider2D>();
-            if (ballCol != null && ballCol.sharedMaterial != null) bounciness *= ballCol.sharedMaterial.bounciness;
-
-            Vector2 reflected2 = Vector2.Reflect(velAtImpact2, chosen.normal) * bounciness;
-
-            currentPos2 = hitPoint2 + reflected2.normalized * skinDistance;
-            currentVel2 = reflected2;
-
+            pos = hitPoint + reflectedDir * trajectorySkinDistance;
             bouncesLeft--;
         }
 
-        lineRenderer.positionCount = points.Count;
-        for (int i = 0; i < points.Count; i++) lineRenderer.SetPosition(i, points[i]);
+        trajectoryLine.positionCount = points.Count;
+        for (int i = 0; i < points.Count; i++) trajectoryLine.SetPosition(i, points[i]);
+    }
+
+// Helper: ball center
+    Vector2 GetBallWorldCenter()
+    {
+        CircleCollider2D cc = GetComponent<CircleCollider2D>();
+        if (cc != null) return (Vector2)ballTransform.TransformPoint(cc.offset);
+        return (Vector2)ballTransform.position;
+    }
+
+// Helper: ball radius
+    float GetBallWorldRadius()
+    {
+        CircleCollider2D cc = GetComponent<CircleCollider2D>();
+        if (cc != null)
+        {
+            float scale = Mathf.Max(Mathf.Abs(ballTransform.lossyScale.x), Mathf.Abs(ballTransform.lossyScale.y));
+            return Mathf.Max(0.0001f, cc.radius * scale);
+        }
+
+        return 0.1f;
+    }
+
+// Helper: estimate velocity from charge
+    Vector2 EstimateVelocityFromCharge()
+    {
+        // use launchForce and transform.up
+        return ballTransform.up * launchForce;
+    }
+
+// Compute nearest intersection with axis-aligned box (min/max)
+    bool ComputeNearestBoxIntersection(Vector2 pos, Vector2 dir, float minX, float maxX, float minY, float maxY,
+        out Vector2 hitPoint, out Vector2 hitNormal, out float tOut)
+    {
+        hitPoint = Vector2.zero;
+        hitNormal = Vector2.zero;
+        tOut = float.MaxValue;
+        bool found = false;
+
+        if (Mathf.Abs(dir.x) > 1e-6f)
+        {
+            float tx = (minX - pos.x) / dir.x;
+            if (tx > 1e-6f)
+            {
+                Vector2 p = pos + dir * tx;
+                if (p.y >= minY - 1e-6f && p.y <= maxY + 1e-6f && tx < tOut)
+                {
+                    tOut = tx;
+                    hitPoint = p;
+                    hitNormal = Vector2.right;
+                    found = true;
+                }
+            }
+
+            float tx2 = (maxX - pos.x) / dir.x;
+            if (tx2 > 1e-6f)
+            {
+                Vector2 p = pos + dir * tx2;
+                if (p.y >= minY - 1e-6f && p.y <= maxY + 1e-6f && tx2 < tOut)
+                {
+                    tOut = tx2;
+                    hitPoint = p;
+                    hitNormal = Vector2.left;
+                    found = true;
+                }
+            }
+        }
+
+        if (Mathf.Abs(dir.y) > 1e-6f)
+        {
+            float ty = (minY - pos.y) / dir.y;
+            if (ty > 1e-6f)
+            {
+                Vector2 p = pos + dir * ty;
+                if (p.x >= minX - 1e-6f && p.x <= maxX + 1e-6f && ty < tOut)
+                {
+                    tOut = ty;
+                    hitPoint = p;
+                    hitNormal = Vector2.up;
+                    found = true;
+                }
+            }
+
+            float ty2 = (maxY - pos.y) / dir.y;
+            if (ty2 > 1e-6f)
+            {
+                Vector2 p = pos + dir * ty2;
+                if (p.x >= minX - 1e-6f && p.x <= maxX + 1e-6f && ty2 < tOut)
+                {
+                    tOut = ty2;
+                    hitPoint = p;
+                    hitNormal = Vector2.down;
+                    found = true;
+                }
+            }
+        }
+
+        return found;
     }
 }
