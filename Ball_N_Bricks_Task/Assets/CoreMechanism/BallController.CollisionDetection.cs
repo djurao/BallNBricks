@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,6 +6,7 @@ public partial class BallController : MonoBehaviour
 {
     public LayerMask brickLayerMask;
     public float collisionCheckExtra = 0.01f;
+    public event Action OnCollidedWithBrick;
 
     private void CheckBallBrickCollisions()
     {
@@ -35,7 +37,7 @@ public partial class BallController : MonoBehaviour
 
             // Notify brick
             brick.OnHit();
-
+            OnCollidedWithBrick?.Invoke();
             // Compute collision normal: from closest point on collider to ball center
             Vector2 ballCenter = center;
             Vector2 closest = col.ClosestPoint(ballCenter);
@@ -75,4 +77,5 @@ public partial class BallController : MonoBehaviour
             }
         }
     }
+
 }

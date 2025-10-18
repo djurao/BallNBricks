@@ -2,12 +2,15 @@ using UnityEngine;
 
 public class OnBrickBrokenFinished : StateMachineBehaviour
 {
+    public bool disableObject;
+    public bool disableParent;
     // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
     override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        animator.gameObject.SetActive(false);
+        if(disableObject)animator.gameObject.SetActive(false);
+        if(disableParent) animator.transform.parent.gameObject.SetActive(false);    
     }
-
+    
     // OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
     //override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     //{

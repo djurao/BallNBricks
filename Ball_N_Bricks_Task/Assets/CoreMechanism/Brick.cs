@@ -3,9 +3,9 @@ using UnityEngine;
 public class Brick : MonoBehaviour
 {
     public int hitsToBreak = 1;
-    public GameObject breakEffectPrefab;
     public Animator animator;
     public SpriteRenderer spriteRenderer;
+    public BoxCollider2D collider;
     public void OnHit()
     {
         hitsToBreak--;
@@ -14,14 +14,12 @@ public class Brick : MonoBehaviour
 
     void Break()
     {
-        hitsToBreak--;
-        //if (breakEffectPrefab != null) Instantiate(breakEffectPrefab, transform.position, Quaternion.identity);
         if (hitsToBreak <= 0)
         {
             animator.gameObject.SetActive(true);   
             animator.SetTrigger("Break");
             spriteRenderer.enabled = false;
+            collider.enabled = false;
         }
-            
     }
 }

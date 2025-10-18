@@ -36,7 +36,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: BrickShattering
-  m_Speed: 1
+  m_Speed: 1.5
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 2265739780038839254}
@@ -67,6 +67,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30e833e99cdd4e7448681bf942967f35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  disableObject: 0
+  disableParent: 0
 --- !u!114 &-126405912074080257
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -79,6 +81,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 30e833e99cdd4e7448681bf942967f35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  disableObject: 1
+  disableParent: 0
 --- !u!91 &9100000
 AnimatorController:
   m_ObjectHideFlags: 0
