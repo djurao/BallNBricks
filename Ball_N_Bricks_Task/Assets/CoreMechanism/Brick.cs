@@ -4,6 +4,8 @@ public class Brick : MonoBehaviour
 {
     public int hitsToBreak = 1;
     public GameObject breakEffectPrefab;
+    public Animator animator;
+    public SpriteRenderer spriteRenderer;
     public void OnHit()
     {
         hitsToBreak--;
@@ -14,7 +16,12 @@ public class Brick : MonoBehaviour
     {
         hitsToBreak--;
         //if (breakEffectPrefab != null) Instantiate(breakEffectPrefab, transform.position, Quaternion.identity);
-        if(hitsToBreak <= 0)
-            Destroy(gameObject);
+        if (hitsToBreak <= 0)
+        {
+            animator.gameObject.SetActive(true);   
+            animator.SetTrigger("Break");
+            spriteRenderer.enabled = false;
+        }
+            
     }
 }
