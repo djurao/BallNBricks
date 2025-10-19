@@ -1,9 +1,14 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public partial class BallController : MonoBehaviour
 {
+    private static readonly int Swing = Animator.StringToHash("Swing");
+    private static readonly int StopSwinging = Animator.StringToHash("StopSwinging");
+
     [Header("References (assign separate GameObject each)")]
     public Transform ballSpawnPosition;
 
@@ -12,14 +17,20 @@ public partial class BallController : MonoBehaviour
     public SpriteRenderer powerUpSpriteRenderer;
     public Camera mainCamera;
     public List<BallMovement> ballMovements = new List<BallMovement>();
+    public Animator swingAnimator;
+    public GameObject retractBallsButton;
+    public int ballsInAction;
+    public int ballsLaunched;
+    
     [Header("Launch / Input")] public float launchForce = 0f;
     public float maxLaunchForce = 10f;
     public float powerRefillRate = 5f;
     public float rotationSpeed = 8f;
-    public float currentSpeed;
-// transform-based velocity (2D)
+    private bool batInteractable;
     private Vector2 initialLaunchVelocity;
     private bool isVelocityCaptured = false;
+    private bool CanLaunchBalls => ballsInAction == 0 && ballsLaunched == 0;
+
     private Vector2 launchVelocity = Vector2.zero;
     public bool isLaunched;
     private Coroutine launchRoutine;
@@ -34,20 +45,54 @@ public partial class BallController : MonoBehaviour
     private bool MouseHeld => Input.GetMouseButton(0);
     private bool MouseReleased => Input.GetMouseButtonUp(0);
     private bool MousePressed => Input.GetMouseButtonDown(0);
-    private void UpdateSpeedValue()
+    public Action onBallRetracted;
+    private void OnEnable() => onBallRetracted += OnBallRetracted;
+    private void OnDisable() => onBallRetracted -= OnBallRetracted;
+
+    private void Awake() => InitBalls();
+
+    private void InitBalls()
     {
-        currentSpeed = launchVelocity.magnitude;
+        foreach (var ball in ballMovements)
+        {
+            ball.DI(this);
+        }
     }
-    public void LaunchBall()
+    public void PrepareBatAndBallLogic()
+    {
+        Invoke(nameof(UnlockBatInteraction), 0.5f);
+    }
+    // TODO Create method to Lock it after level is complete
+    private void UnlockBatInteraction() => batInteractable = true;
+    private void OnBallRetracted()
+    {
+        ballsInAction--;
+        if (ballsInAction == 0)
+        {
+            retractBallsButton.SetActive(false);
+            ballsLaunched = 0;
+        }
+    }
+
+    public void LaunchBalls()
+    {
+        if (ballsInAction > 0) return;
+        ballsLaunched = 0;
+        retractBallsButton.SetActive(true);
+        swingAnimator.SetTrigger(Swing);
+        StopBallsLaunch();
+        PlayAudioBatHit();
+        launchRoutine = StartCoroutine(LaunchBallsSequential());
+    }
+
+    private void StopBallsLaunch()
     {
         if (launchRoutine != null)
         {
             StopCoroutine(launchRoutine);
         }
-        launchRoutine = StartCoroutine(LaunchBallsSequential());
     }
 
-    public int launchedBalls;
     private IEnumerator LaunchBallsSequential()
     {
         isVelocityCaptured = false; // Reset at the start
@@ -74,18 +119,24 @@ public partial class BallController : MonoBehaviour
                         }
                         // Launch all balls with this stored velocity
                         ballMovement.LaunchBall(initialLaunchVelocity.normalized, initialLaunchVelocity.magnitude);
+                        ballMovement.retracted = false;
+                        ballsInAction++;
+                        ballsLaunched++;
+                        if (ballsLaunched ==  ballMovements.Count)
+                        {
+                            swingAnimator.SetTrigger(StopSwinging);
+                        }
                     }
                 }
             }
             yield return new WaitForSeconds(0.1f); // wait before launching next
         }
     }
-
+    private void PlayAudioBatHit() => AudioManager.Instance.PlayBallHit();
     private void Update()
     {
+        if (!CanLaunchBalls || !batInteractable) return;
         UpdateTrajectoryIfNeeded();
-        UpdateSpeedValue();
-        HandleKeyboardInput();
         HandleMouseInput();
 
         if (MouseHeld)
@@ -97,14 +148,23 @@ public partial class BallController : MonoBehaviour
 
     private void HandleMouseInput()
     {
+        if (ballsInAction > 0) return;
         if (MousePressed) OnBeginCharge();
         if (MouseHeld) ContinueCharge();
-        if (MouseReleased) LaunchBall();
+        if (MouseReleased) LaunchBalls();
     }
-
-    private void HandleKeyboardInput()
+    public void RetractAllBallsToBase()
     {
-        if (Input.GetKeyDown(KeyCode.R)) ResetBall();
+        StopCoroutine(launchRoutine);
+        ballsLaunched = 0;
+        swingAnimator.SetTrigger(StopSwinging);
+        foreach (var ball in ballMovements)
+        {
+            if (ball != null)
+            {
+                ball.MoveToBasket();
+            }
+        }
     }
 
     private void ResetBall()
@@ -134,12 +194,8 @@ public partial class BallController : MonoBehaviour
         var color = powerUpSpriteRenderer.color;
         color.a = Mathf.Clamp01(normalized);
         powerUpSpriteRenderer.color = color;
-        powerUpSpriteRenderer.transform.localScale = Vector3.one * Mathf.Clamp01(normalized);
+        //powerUpSpriteRenderer.transform.localScale = Vector3.one * Mathf.Clamp01(normalized);
     }
-
-    
-
-    
     private void OnValidate()
     {
         restitution = Mathf.Clamp01(restitution);
@@ -165,4 +221,6 @@ public partial class BallController : MonoBehaviour
         var newZ = Mathf.LerpAngle(currentZ, targetAngle, rotationSpeed * Time.deltaTime);
         ballTransform.rotation = Quaternion.Euler(0f, 0f, newZ);
     }
+
+    
 }

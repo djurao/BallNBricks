@@ -5,12 +5,12 @@ using UnityEngine;
 [RequireComponent(typeof(CircleCollider2D))]
 public class BallMovement : MonoBehaviour
 {
+    private BallController ballController;
     // Runtime state (set by caller or by calling LaunchBall)
     [HideInInspector] public Vector2 velocity = Vector2.zero;
-
     [HideInInspector] public bool isLaunched = false;
 
-    // References (assign in inspector or set by BallController at runtime)
+// References (assign in inspector or set by BallController at runtime)
     public BoxCollider2D playAreaCollider;
     public LayerMask brickLayerMask;
     public float collisionCheckExtra = 0.01f;
@@ -21,13 +21,21 @@ public class BallMovement : MonoBehaviour
     private float bottomBoundaryY;
 
     public Transform spawnPoint;
-
+    public Transform basketPoint;
     private const float stopSpeedSqr = 0.01f;
+
+// Coroutine handle for moving to basket
+    private Coroutine moveToBasketCoroutine;
 
     void Awake()
     {
         circleCollider = GetComponent<CircleCollider2D>();
         if (circleCollider == null) circleCollider = gameObject.AddComponent<CircleCollider2D>();
+    }
+
+    public void DI(BallController _ballController)
+    {
+        ballController = _ballController;
     }
 
     void Start()
@@ -39,10 +47,11 @@ public class BallMovement : MonoBehaviour
         }
     }
 
-    // Call this to start a launch from outside (BallController)
-    // direction should be normalized; speed is world units/sec
+// Call this to start a launch from outside (BallController)
+// direction should be normalized; speed is world units/sec
     public void LaunchBall(Vector2 direction, float speed)
     {
+        transform.position = spawnPoint.position;
         if (direction.sqrMagnitude < 1e-6f || speed <= 0f) return;
         velocity = direction.normalized * speed;
         isLaunched = true;
@@ -50,8 +59,17 @@ public class BallMovement : MonoBehaviour
 
     public void ResetBall()
     {
+        // Stop any ongoing basket coroutine
+        if (moveToBasketCoroutine != null)
+        {
+            StopCoroutine(moveToBasketCoroutine);
+            moveToBasketCoroutine = null;
+        }
+
         // Reset position to spawn point
-        transform.position = spawnPoint.position;
+        if (spawnPoint != null)
+            transform.position = spawnPoint.position;
+
         // Reset velocities and states
         velocity = Vector2.zero;
         isLaunched = false;
@@ -63,6 +81,15 @@ public class BallMovement : MonoBehaviour
     {
         if (isLaunched)
             UpdateMovement();
+    }
+
+    public void MoveToBasket()
+    {
+        // Stop any existing coroutine and start a new one
+        if (moveToBasketCoroutine != null) StopCoroutine(moveToBasketCoroutine);
+        // Zero velocity immediately to avoid further physics movement
+        velocity = Vector2.zero;
+        moveToBasketCoroutine = StartCoroutine(MoveToBasketAndStop(basketPoint.position, 0.6f));
     }
 
     public void UpdateMovement()
@@ -83,11 +110,19 @@ public class BallMovement : MonoBehaviour
         float minY = b.min.y + inset;
         float maxY = b.max.y - inset;
 
-        // Check if ball hits the bottom edge
+        // Check if ball hits the bottom edge -> interpolate to basketPoint and stop
         if (nextPos.y <= bottomBoundaryY + inset)
         {
-            ResetBall();
-            return; // Exit early after reset
+            if (basketPoint != null)
+            {
+                MoveToBasket();
+            }
+            else
+            {
+                ResetBall();
+            }
+
+            return; // Exit early after scheduling the move
         }
 
         bool collided = false;
@@ -148,6 +183,37 @@ public class BallMovement : MonoBehaviour
             isLaunched = false;
         }
     }
+
+    IEnumerator MoveToBasketAndStop(Vector3 target, float duration)
+    {
+        float t = 0f;
+        Vector3 start = transform.position;
+        Quaternion startRot = transform.rotation;
+        // Optional: aim rotation to face downward at the end (adjust as desired)
+        Vector3 directionToTarget = (target - start).normalized;
+        float targetAngle = Mathf.Atan2(directionToTarget.y, directionToTarget.x) * Mathf.Rad2Deg - 90f;
+        Quaternion targetRot = Quaternion.Euler(0f, 0f, targetAngle);
+
+        // Smoothly move and optionally rotate
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            float alpha = Mathf.SmoothStep(0f, 1f, t / duration);
+            transform.position = Vector3.Lerp(start, target, alpha);
+            transform.rotation = Quaternion.Slerp(startRot, targetRot, alpha);
+            yield return null;
+        }
+
+        transform.position = target;
+        transform.rotation = targetRot;
+        velocity = Vector2.zero;
+        moveToBasketCoroutine = null;
+        if(!retracted && isLaunched)ballController.onBallRetracted?.Invoke();
+        retracted = true;
+        isLaunched = false;
+    }
+
+    public bool retracted;
     void HandleBrickCollisions()
     {
         if (brickLayerMask == 0) return;

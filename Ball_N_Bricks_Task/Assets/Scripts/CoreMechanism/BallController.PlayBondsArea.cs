@@ -8,19 +8,19 @@ public partial class BallController
     {
         if (!isLaunched || ballTransform == null || launchVelocity.sqrMagnitude <= 0f || playAreaCollider == null)
             return;
-        Vector2 pos = (Vector2)ballTransform.position;
-        Vector2 nextPos = pos + launchVelocity * Time.deltaTime;
+        var pos = (Vector2)ballTransform.position;
+        var nextPos = pos + launchVelocity * Time.deltaTime;
 
         // compute inset bounds so the ball stays fully inside
-        Bounds b = playAreaCollider.bounds;
-        float inset = ballRadius;
-        float minX = b.min.x + inset;
-        float maxX = b.max.x - inset;
-        float minY = b.min.y + inset;
-        float maxY = b.max.y - inset;
+        var b = playAreaCollider.bounds;
+        var inset = ballRadius;
+        var minX = b.min.x + inset;
+        var maxX = b.max.x - inset;
+        var minY = b.min.y + inset;
+        var maxY = b.max.y - inset;
 
-        bool collided = false;
-        Vector2 collisionNormal = Vector2.zero;
+        var collided = false;
+        var collisionNormal = Vector2.zero;
 
         // check vertical walls (left/right)
         if (nextPos.x < minX)

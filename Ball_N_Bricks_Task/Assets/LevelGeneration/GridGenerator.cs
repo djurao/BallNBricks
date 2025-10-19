@@ -10,19 +10,10 @@ namespace LevelGeneration
         public Texture2D[] levelTextures;
         public List<BrickDefinition> brickDefinitions;
         public Vector2 cellSize = new Vector2(3f, 1.5f);
-        public float verticalBrickLayoutPosition = 0f; // positive moves up, negative moves down
-
-        void Start()
+        public float verticalBrickLayoutPosition = 0f;
+        public void PrepareLayout(LevelDefinition levelDefinition)
         {
-            PrepareLevel(currentLevel);
-        }
-
-        private void PrepareLevel(int id)
-        {
-            if (levelTextures == null || id < 0 || id >= levelTextures.Length) return;
-            if (brickDefinitions == null || brickDefinitions.Count == 0) return;
-
-            var grid = TextureToLevelSampler.CreateGridFromTexture(levelTextures[id]);
+            var grid = TextureToLevelSampler.CreateGridFromTexture(levelDefinition.levelTexture);
             var cols = grid.GetLength(0);
             var rows = grid.GetLength(1);
 

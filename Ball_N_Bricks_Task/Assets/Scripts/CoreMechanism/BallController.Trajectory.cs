@@ -17,10 +17,9 @@ public partial class BallController
     private const float DefaultIntersectionEpsilon = 1e-6f;
     private const float DefaultVelocityEpsilon = 1e-8f;
 
-
     public void UpdateTrajectoryIfNeeded()
     {
-       
+        if (!CanLaunchBalls) return;
         if (MouseHeld)
             DrawTrajectory();
         else
