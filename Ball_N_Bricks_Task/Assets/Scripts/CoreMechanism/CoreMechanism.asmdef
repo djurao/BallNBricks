@@ -1,0 +1,16 @@
+{
+    "name": "CoreMechanism",
+    "rootNamespace": "",
+    "references": [
+        "GUID:ca802b24540fd2f4ab15946dbc79104a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
