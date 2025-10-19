@@ -11,15 +11,18 @@ public partial class BallController : MonoBehaviour
     public CircleCollider2D  ballCollider;
     public SpriteRenderer powerUpSpriteRenderer;
     public Camera mainCamera;
+    public List<BallMovement> ballMovements = new List<BallMovement>();
     [Header("Launch / Input")] public float launchForce = 0f;
     public float maxLaunchForce = 10f;
     public float powerRefillRate = 5f;
     public float rotationSpeed = 8f;
     public float currentSpeed;
 // transform-based velocity (2D)
+    private Vector2 initialLaunchVelocity;
+    private bool isVelocityCaptured = false;
     private Vector2 launchVelocity = Vector2.zero;
     public bool isLaunched;
-
+    private Coroutine launchRoutine;
     [Header("Play area & collision")] public BoxCollider2D playAreaCollider; // single box play area
     public float ballRadius = 0.25f; // world units
     [Header("Play area & collision")]
@@ -35,6 +38,49 @@ public partial class BallController : MonoBehaviour
     {
         currentSpeed = launchVelocity.magnitude;
     }
+    public void LaunchBall()
+    {
+        if (launchRoutine != null)
+        {
+            StopCoroutine(launchRoutine);
+        }
+        launchRoutine = StartCoroutine(LaunchBallsSequential());
+    }
+
+    public int launchedBalls;
+    private IEnumerator LaunchBallsSequential()
+    {
+        isVelocityCaptured = false; // Reset at the start
+        foreach (var ballMovement in ballMovements)
+        {
+            if (ballMovement != null)
+            {
+                if (mainCamera != null && ballTransform != null)
+                {
+                    float zDistance = Mathf.Abs(mainCamera.transform.position.z - ballTransform.position.z);
+                    Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, zDistance));
+                    mouseWorld.z = ballTransform.position.z;
+                    Vector3 dir3 = (mouseWorld - ballTransform.position);
+                    Vector2 direction = new Vector2(dir3.x, dir3.y).normalized;
+
+                    if (direction.sqrMagnitude >= 1e-6f)
+                    {
+                        float speed = launchForce; // or any value you want
+                        if (!isVelocityCaptured)
+                        {
+                            // Save the velocity of the first launched ball
+                            initialLaunchVelocity = direction * speed;
+                            isVelocityCaptured = true;
+                        }
+                        // Launch all balls with this stored velocity
+                        ballMovement.LaunchBall(initialLaunchVelocity.normalized, initialLaunchVelocity.magnitude);
+                    }
+                }
+            }
+            yield return new WaitForSeconds(0.1f); // wait before launching next
+        }
+    }
+
     private void Update()
     {
         UpdateTrajectoryIfNeeded();
@@ -61,6 +107,14 @@ public partial class BallController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R)) ResetBall();
     }
 
+    private void ResetBall()
+    {
+        foreach (var ball in ballMovements)
+        {
+            ball.ResetBall();
+        }
+    }
+
     private void OnBeginCharge()
     {
         launchForce = 0f;
@@ -83,37 +137,9 @@ public partial class BallController : MonoBehaviour
         powerUpSpriteRenderer.transform.localScale = Vector3.one * Mathf.Clamp01(normalized);
     }
 
-    private void LaunchBall()
-    {
-        if (ballTransform == null || mainCamera == null) return;
-        AudioManager.Instance.PlayBallHit();
-        float zDistance = Mathf.Abs(mainCamera.transform.position.z - ballTransform.position.z);
-        Vector3 mouseWorld =
-            mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, zDistance));
-        mouseWorld.z = ballTransform.position.z;
-        Vector3 dir3 = (mouseWorld - ballTransform.position);
-        Vector2 direction = new Vector2(dir3.x, dir3.y).normalized;
-        if (direction.sqrMagnitude < 1e-6f) return;
+    
 
-        launchVelocity = direction * launchForce;
-        isLaunched = true;
-
-        SetPowerUI(0f);
-        launchForce = 0f;
-    }
-
-    private void ResetBall()
-    {
-        if (ballTransform == null) return;
-
-        if (ballSpawnPosition != null)
-            ballTransform.position = ballSpawnPosition.position;
-
-        ballTransform.rotation = Quaternion.Euler(0f, 0f, 0);
-        launchVelocity = Vector2.zero;
-        isLaunched = false;
-        SetPowerUI(0f);
-    }
+    
     private void OnValidate()
     {
         restitution = Mathf.Clamp01(restitution);
