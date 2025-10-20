@@ -2,7 +2,8 @@
     "name": "CoreMechanism",
     "rootNamespace": "",
     "references": [
-        "GUID:ca802b24540fd2f4ab15946dbc79104a"
+        "GUID:ca802b24540fd2f4ab15946dbc79104a",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

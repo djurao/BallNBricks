@@ -1,16 +1,29 @@
+using System;
 using Misc;
 using UnityEngine;
-
+using TMPro;
+using LevelGeneration;
 public class Brick : MonoBehaviour
 {
     public int hitsToBreak = 1;
+    public TextMeshPro hitsToBreakLabel;
     public Animator animator;
     public SpriteRenderer spriteRenderer;
     public BoxCollider2D collider;
     public int scoreValue = 0;
+    public void Init(BrickDefinition brickDefinition)
+    {
+        var newColor = brickDefinition.samplingIdentifier;
+        newColor.a = 0.5f;
+        spriteRenderer.color = newColor;
+        hitsToBreak = brickDefinition.hitsToBreak;
+        UpdateLabel();
+    }
+
     public void OnHit()
     {
         hitsToBreak--;
+        UpdateLabel();
         AudioManager.Instance.PlayGlassHit();
         if (hitsToBreak <= 0) Break();
     }
@@ -25,6 +38,8 @@ public class Brick : MonoBehaviour
             animator.SetTrigger("Break");
             spriteRenderer.enabled = false;
             collider.enabled = false;
+            hitsToBreakLabel.gameObject.SetActive(false);   
         }
     }
+    private void UpdateLabel() => hitsToBreakLabel.text = $"{hitsToBreak}";
 }

@@ -21,7 +21,7 @@ public partial class BallController : MonoBehaviour
     public GameObject retractBallsButton;
     public int ballsInAction;
     public int ballsLaunched;
-    
+    public Action OnBallsReturnedToBase;
     [Header("Launch / Input")] public float launchForce = 0f;
     public float maxLaunchForce = 10f;
     public float powerRefillRate = 5f;
@@ -64,14 +64,15 @@ public partial class BallController : MonoBehaviour
     }
     // TODO Create method to Lock it after level is complete
     private void UnlockBatInteraction() => batInteractable = true;
+    public void LockBatInteraction() => batInteractable = false;
+
     private void OnBallRetracted()
     {
         ballsInAction--;
-        if (ballsInAction == 0)
-        {
-            retractBallsButton.SetActive(false);
-            ballsLaunched = 0;
-        }
+        if (ballsInAction != 0) return;
+        retractBallsButton.SetActive(false);
+        ballsLaunched = 0;
+        OnBallsReturnedToBase?.Invoke();
     }
 
     public void LaunchBalls()
