@@ -77,3 +77,6 @@ Ball_N_Bricks_Task/.vsconfig
 /[Aa]ssets/AssetStoreTools
 *.DotSettings.user
 /Ball_N_Bricks_Task/Addressables_Temp
+/Ball_N_Bricks_Task/.utmp
+/Ball_N_Bricks_Task/UserSettings/Layouts
+Ball_N_Bricks_Task/UserSettings/Layouts/default-6000.dwlt
