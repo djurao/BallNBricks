@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Level_1
   m_EditorClassIdentifier: 
   levelNumber: 1
-  levelTexture: {fileID: 2800000, guid: a5c406e4d0175634b82951725cee62de, type: 3}
+  levelTexture: {fileID: 2800000, guid: 65eb66e2d5eb4e740a0ec61226b51006, type: 3}
   allowedAttempts: 3
   numberOfCollectables: 0

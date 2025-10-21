@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -19,6 +20,7 @@ public partial class BallController : MonoBehaviour
     public List<BallMovement> ballMovements = new List<BallMovement>();
     public Animator swingAnimator;
     public GameObject retractBallsButton;
+    public int maxAmountOfBalls = 50;
     public int ballsInAction;
     public int ballsLaunched;
     public Action OnBallsReturnedToBase;
@@ -26,9 +28,13 @@ public partial class BallController : MonoBehaviour
     public float maxLaunchForce = 10f;
     public float powerRefillRate = 5f;
     public float rotationSpeed = 8f;
+    public float maxLaunchHeldThreshold = 0.3f;
+    public float inputHeldTime;
     private bool batInteractable;
     private Vector2 initialLaunchVelocity;
     private bool isVelocityCaptured = false;
+    public bool isInputSourceInsidePlayArea = false;
+    public TextMeshPro ballsInBasketLabel;
     private bool CanLaunchBalls => ballsInAction == 0 && ballsLaunched == 0;
 
     private Vector2 launchVelocity = Vector2.zero;
@@ -77,7 +83,7 @@ public partial class BallController : MonoBehaviour
 
     public void LaunchBalls()
     {
-        if (ballsInAction > 0) return;
+        if (ballsInAction > 0 || inputHeldTime < maxLaunchHeldThreshold) return;
         ballsLaunched = 0;
         retractBallsButton.SetActive(true);
         swingAnimator.SetTrigger(Swing);
@@ -93,7 +99,7 @@ public partial class BallController : MonoBehaviour
             StopCoroutine(launchRoutine);
         }
     }
-
+    private void BallsInBasketUpdate() => ballsInBasketLabel.text = $"{maxAmountOfBalls - ballsInAction}";
     private IEnumerator LaunchBallsSequential()
     {
         isVelocityCaptured = false; // Reset at the start
@@ -103,11 +109,11 @@ public partial class BallController : MonoBehaviour
             {
                 if (mainCamera != null && ballTransform != null)
                 {
-                    float zDistance = Mathf.Abs(mainCamera.transform.position.z - ballTransform.position.z);
-                    Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, zDistance));
+                    var zDistance = Mathf.Abs(mainCamera.transform.position.z - ballTransform.position.z);
+                    var mouseWorld = mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, zDistance));
                     mouseWorld.z = ballTransform.position.z;
-                    Vector3 dir3 = (mouseWorld - ballTransform.position);
-                    Vector2 direction = new Vector2(dir3.x, dir3.y).normalized;
+                    var dir3 = (mouseWorld - ballTransform.position);
+                    var direction = new Vector2(dir3.x, dir3.y).normalized;
 
                     if (direction.sqrMagnitude >= 1e-6f)
                     {
@@ -136,13 +142,12 @@ public partial class BallController : MonoBehaviour
     private void PlayAudioBatHit() => AudioManager.Instance.PlayBallHit();
     private void Update()
     {
-        if (!CanLaunchBalls || !batInteractable) return;
+        CheckIfInputSourceIsInsidePlayArea();
+        BallsInBasketUpdate();
+
+        if (!CanLaunchBalls || !batInteractable || !isInputSourceInsidePlayArea) return;
         UpdateTrajectoryIfNeeded();
         HandleMouseInput();
-
-        if (MouseHeld)
-            RotateBallTowardsMouse();
-
         HandleBoundsCollision();
         CheckBallBrickCollisions();
     }
@@ -151,8 +156,17 @@ public partial class BallController : MonoBehaviour
     {
         if (ballsInAction > 0) return;
         if (MousePressed) OnBeginCharge();
-        if (MouseHeld) ContinueCharge();
-        if (MouseReleased) LaunchBalls();
+        if (MouseHeld)
+        {
+            RotateBallTowardsMouse();
+            ContinueCharge();
+            inputHeldTime += Time.deltaTime;
+        }
+        if (MouseReleased)
+        {
+            LaunchBalls();
+            inputHeldTime = 0;
+        }
     }
     public void RetractAllBallsToBase()
     {
@@ -178,6 +192,7 @@ public partial class BallController : MonoBehaviour
 
     private void OnBeginCharge()
     {
+        inputHeldTime = 0;
         launchForce = 0f;
         SetPowerUI(0f);
     }
@@ -223,5 +238,32 @@ public partial class BallController : MonoBehaviour
         ballTransform.rotation = Quaternion.Euler(0f, 0f, newZ);
     }
 
-    
+    public LayerMask hitMask = Physics2D.DefaultRaycastLayers;
+
+    void CheckIfInputSourceIsInsidePlayArea()
+    {
+        // Mouse
+        if (Input.GetMouseButtonDown(0))
+            CheckPointer(Input.mousePosition);
+
+        // Touch
+        if (Input.touchCount > 0)
+        {
+            foreach (var t in Input.touches)
+                if (t.phase == TouchPhase.Began)
+                    CheckPointer(t.position);
+        }
+    }
+
+    void CheckPointer(Vector2 screenPos)
+    {
+        float distanceToSpritePlane = Mathf.Abs(Camera.main.transform.position.z - 0f); // sprite z = 0
+        Vector3 screenPoint = new Vector3(screenPos.x, screenPos.y, distanceToSpritePlane);
+        Vector3 worldPos3 = Camera.main.ScreenToWorldPoint(screenPoint);
+        Vector2 worldPos = new Vector2(worldPos3.x, worldPos3.y);
+
+        var cols = Physics2D.OverlapPointAll(worldPos, hitMask);
+        isInputSourceInsidePlayArea = cols.Length > 0;
+        foreach (var c in cols) Debug.Log("Hit: " + c.name + " bounds: " + c.bounds);
+    }
 }

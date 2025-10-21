@@ -18,6 +18,7 @@ public class GameLoop : MonoBehaviour
     [Header("UI")]
     public GameObject startLevelButton;
     public TextMeshProUGUI currentLevelLabel;
+    public GameObject nextLevelButton;
     [Header("Level Finished")]
     public GameObject levelFinishedPopup;
     public GameObject noEnoughCurrencyPopup;
@@ -41,6 +42,7 @@ public class GameLoop : MonoBehaviour
 
     public void PrepareLevel(int id)
     {
+        multiplierApplied = false;
         var levelNormalized = currentLevel + 1;
         currentLevelLabel.text = $"Level {levelNormalized}";
         maxAttempts = levelDefinitions[currentLevel].allowedAttempts;
@@ -71,6 +73,8 @@ public class GameLoop : MonoBehaviour
         gridGenerator.CleanUpCurrentLevelRemnants();
         ballController.LockBatInteraction();
         scoreThisLevel = Score.Instance.GetScore();
+        UpdateScoreLabel();
+        nextLevelButton.SetActive(currentLevel != levelDefinitions.Count - 1);
         // inject score
     }
 
@@ -85,7 +89,7 @@ public class GameLoop : MonoBehaviour
         }
         if (index == 0)
         {
-            scoreLabelFinishPopup.text = scoreThisLevel.ToString();
+            UpdateScoreLabel();
             scoreLabelFinishPopup.color = Color.white;
             amountToPay = 0;
             multiplierPendingForApply = 0;
@@ -107,10 +111,11 @@ public class GameLoop : MonoBehaviour
             HardCurrency.Instance.OpenClosePanel(true);
         }
     }
+    private void UpdateScoreLabel() => scoreLabelFinishPopup.text = $"Score: {scoreThisLevel}";
     public void ApplyModifier()
     {
         scoreThisLevel *= multiplierPendingForApply;
-        scoreLabelFinishPopup.text = scoreThisLevel.ToString();
+        UpdateScoreLabel();
         scoreLabelFinishPopup.color = Color.green;
         multiplierApplied = true;
         FinalizeTransaction();
@@ -136,10 +141,7 @@ public class GameLoop : MonoBehaviour
         PrepareLevel(currentLevel);
     }
 
-    public void ProceedToLeaderboard()
-    {
-        
-    }
+    public void ProceedToLeaderboard() => LeaderBoards.Instance.OpenLeaderboards(currentLevel, scoreThisLevel);
 
     private void UpdateAttemptUIState()
     {

@@ -5,6 +5,7 @@ public class AudioManager : MonoBehaviour
     public static AudioManager Instance;
     [SerializeField] private AudioSource ballSource;
     [SerializeField] private AudioSource batAudioSource;
+    [SerializeField] private AudioSource brickShatteringAudioSource;
 
     [SerializeField] private AudioClip[] glassHits;
     [SerializeField] private AudioClip[] ballHits;
@@ -13,7 +14,7 @@ public class AudioManager : MonoBehaviour
     
     public void PlayGlassHit(float volume = 1f) => PlayRandomFromArray(glassHits, volume, ballSource);
     public void PlayBallHit(float volume = 1f) => PlayRandomFromArray(ballHits, volume, batAudioSource);
-    public void PlayGlassShattering(float volume = 1f) => PlayRandomFromArray(glassShattering, volume, ballSource);
+    public void PlayGlassShattering(float volume = 1f) => PlayRandomFromArray(glassShattering, volume, brickShatteringAudioSource);
     private void PlayRandomFromArray(AudioClip[] clips, float volume, AudioSource audioSource)
     {
         var index = Random.Range(0, clips.Length);

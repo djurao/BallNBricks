@@ -5,52 +5,67 @@ using UnityEngine;
 using System.Linq;
 public class LeaderBoards : MonoBehaviour
 {
+    public static LeaderBoards Instance;
+    public GameObject leaderboardsPanel;    
     public LeaderboardThumb thumbPrefab;
     public List<LeaderboardThumb> entryThumbs;
     public Transform content;
     public SerializableUserList  userList;
     public List<UserDto> sortedUsers;
-    public int levelID;
+    public int currentLevel;
     private LeaderboardThumb usersThumb;
     public UserDto user;
     public int lastVisibleThumbEntry = 15;
-    private void FetchUsers() => userList = SaveLoadLeaderboards.LoadDummyUsers();
-    private void SortUsersByScoreForSpecificLevel()
+
+    private void Awake() => Instance = this;
+
+    private void Start()
     {
-        sortedUsers = userList.users
-            .OrderByDescending(u => u.levelScores?.FirstOrDefault(ls => ls.levelID == levelID)?.score ?? 0)
-            .ThenBy(u => u.name)
-            .ToList();
+        var userName = UserCreation.Instance.UserCreated();
+        if (!string.IsNullOrEmpty(userName))
+        {
+           InitUser(userName); 
+        }
     }
 
-    private void AddUserScore()
+    public void InitUser(string userName)
     {
         var newId = userList.users.Count == 0 ? 1 : userList.users.Max(u => u.id) + 1;
-        // create user
         user = new UserDto
         {
             id = newId,
-            name = "DJURO",
+            name = userName,
             textureBase64 = null,
             levelScores = new List<LevelScoreData>
             {
-                new LevelScoreData { levelID = 1, score = 100 },
-                new LevelScoreData { levelID = 2, score = 2500 },
-                new LevelScoreData { levelID = 3, score = 10000 }
+                new LevelScoreData { levelID = 1, score = 0 },
+                new LevelScoreData { levelID = 2, score = 0 },
+                new LevelScoreData { levelID = 3, score = 0 }
             }
         };
-
         userList.users.Add(user);
     }
-
+    private void FetchUsers() => userList = SaveLoadLeaderboards.LoadDummyUsers();
+    private void SortUsersByScoreForSpecificLevel(int level)
+    {
+        sortedUsers = userList.users
+            .OrderByDescending(u => u.levelScores?.FirstOrDefault(ls => ls.levelID == level)?.score ?? 0)
+            .ThenBy(u => u.name)
+            .ToList();
+    }
+    public void OpenLeaderboards(int level, int score)
+    {
+        currentLevel = level;
+        AddUserScore(level, score);
+        leaderboardsPanel.SetActive(true);
+        SortUsersByScoreForSpecificLevel(currentLevel);
+        DisplayUsers();
+    }
+    private void AddUserScore(int level, int score) => user.levelScores.Find(l => l.levelID == level+1).score = score;
     private void OnEnable()
     {
         FetchUsers();
-        AddUserScore();
-        SortUsersByScoreForSpecificLevel();
-        DisplayUsers();
     }
-
     private void OnDisable() => CleanUpPreviousEntries();
 
     private void DisplayUsers()
@@ -70,7 +85,7 @@ public class LeaderBoards : MonoBehaviour
     private void CreateThumb(UserDto user, int leaderboardPosition, bool isUsersThumb)
     {
         var newThumb = Instantiate(thumbPrefab, content);
-        var fromLvlToIndexNormalization = levelID - 1;
+        var fromLvlToIndexNormalization = currentLevel - 1;
         newThumb.Set(user, fromLvlToIndexNormalization, leaderboardPosition, isUsersThumb);
         entryThumbs.Add(newThumb);
         if(isUsersThumb)
