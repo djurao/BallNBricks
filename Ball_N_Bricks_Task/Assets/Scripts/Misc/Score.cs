@@ -16,7 +16,15 @@ namespace Misc
             score +=  amountToIncrement;
             UpdateScoreUI();
         }
-    
+
+        public void ResetScore()
+        {
+            score = 0;
+            UpdateScoreUI();
+        }
+
         private void UpdateScoreUI() => scoreText.text = $"{score}";
+
+        public int GetScore() => score;
     }
 }
