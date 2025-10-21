@@ -19,6 +19,8 @@ public class GameLoop : MonoBehaviour
     public GameObject startLevelButton;
     public TextMeshProUGUI currentLevelLabel;
     public GameObject nextLevelButton;
+    public GameObject startOverButton;
+
     [Header("Level Finished")]
     public GameObject levelFinishedPopup;
     public GameObject noEnoughCurrencyPopup;
@@ -75,6 +77,8 @@ public class GameLoop : MonoBehaviour
         scoreThisLevel = Score.Instance.GetScore();
         UpdateScoreLabel();
         nextLevelButton.SetActive(currentLevel != levelDefinitions.Count - 1);
+        startOverButton.SetActive(currentLevel == levelDefinitions.Count - 1);
+        PowerUps.Instance.DeactivateAllPowerUps();
         // inject score
     }
 
@@ -138,6 +142,12 @@ public class GameLoop : MonoBehaviour
         {
             currentLevel++;
         }
+        PrepareLevel(currentLevel);
+    }
+
+    public void StartOver()
+    {
+        currentLevel = 0;
         PrepareLevel(currentLevel);
     }
 

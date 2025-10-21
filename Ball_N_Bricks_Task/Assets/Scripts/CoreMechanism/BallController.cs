@@ -149,7 +149,6 @@ public partial class BallController : MonoBehaviour
         UpdateTrajectoryIfNeeded();
         HandleMouseInput();
         HandleBoundsCollision();
-        CheckBallBrickCollisions();
     }
 
     private void HandleMouseInput()

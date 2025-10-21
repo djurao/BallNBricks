@@ -8,7 +8,7 @@ public partial class BallController
     public int trajectoryMaxSegments = 200;
     public float trajectorySkinDistance = 0.02f;
     public bool trajectoryDebugLogs = false;
-
+    public LayerMask brickLayerMask;
     [Header("Prediction Settings")]
     [Tooltip("Length used for each predicted step / visual forward segment (world units).")]
     public float predictionStepLen = 2f;
@@ -171,7 +171,7 @@ public partial class BallController
             float castLen = segmentDist + 0.01f;
             Vector2 castOrigin = pos;
 
-            var candidates = Physics2D.CircleCastAll(castOrigin, radius + collisionCheckExtra, castDir, castLen,
+            var candidates = Physics2D.CircleCastAll(castOrigin, radius + 0.01f, castDir, castLen,
                 brickLayerMask);
             RaycastHit2D earliestHit = new RaycastHit2D();
             float bestDist = float.MaxValue;

@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using CoreMechanism;
+using Misc;
 using UnityEngine;
-
+using UnityEngine.UI;
 [RequireComponent(typeof(CircleCollider2D))]
 public class BallMovement : MonoBehaviour
 {
@@ -9,7 +11,9 @@ public class BallMovement : MonoBehaviour
     // Runtime state (set by caller or by calling LaunchBall)
     [HideInInspector] public Vector2 velocity = Vector2.zero;
     [HideInInspector] public bool isLaunched = false;
-
+    public SpriteRenderer spriteRenderer;
+    public Sprite normalBall;
+    public Sprite chromeBall;
 // References (assign in inspector or set by BallController at runtime)
     public BoxCollider2D playAreaCollider;
     public LayerMask brickLayerMask;
@@ -51,6 +55,7 @@ public class BallMovement : MonoBehaviour
 // direction should be normalized; speed is world units/sec
     public void LaunchBall(Vector2 direction, float speed)
     {
+        spriteRenderer.sprite = !PowerUps.Instance.chromeBallActive ? normalBall : chromeBall;  
         transform.position = spawnPoint.position;
         if (direction.sqrMagnitude < 1e-6f || speed <= 0f) return;
         velocity = direction.normalized * speed;
@@ -235,11 +240,19 @@ public class BallMovement : MonoBehaviour
         {
             if (col == null) continue;
 
+            var collectable = col.GetComponentInParent<Collectable>() ?? col.GetComponentInChildren<Collectable>();
+            if (collectable != null)
+                collectable.OnCollect();
+                
             var brick = col.GetComponentInParent<Brick>() ?? col.GetComponentInChildren<Brick>();
             if (brick == null) continue;
+            
+           
 
             // Notify the brick it was hit
-            brick.OnHit();
+            brick.OnHit(PowerUps.Instance.chromeBallActive);
+            if (PowerUps.Instance.chromeBallActive)
+                continue; // so that we ignore bouncing
 
             // Compute normal using collider's ClosestPoint
             Vector2 closest = col.ClosestPoint(center);

@@ -21,4 +21,9 @@ public class AudioManager : MonoBehaviour
         var clip = clips[index];
         audioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
     }
+
+    public void Collect()
+    {
+        
+    }
 }

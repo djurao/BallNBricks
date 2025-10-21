@@ -15,4 +15,6 @@ MonoBehaviour:
   levelNumber: 1
   levelTexture: {fileID: 2800000, guid: 65eb66e2d5eb4e740a0ec61226b51006, type: 3}
   allowedAttempts: 3
-  numberOfCollectables: 0
+  powerUps:
+  - amount: 1
+    prefab: {fileID: 8417230167263135731, guid: 9c63ebc203779ce4dbc56e2d9947e328, type: 3}

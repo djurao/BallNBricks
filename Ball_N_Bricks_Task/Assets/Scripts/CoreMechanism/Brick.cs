@@ -20,14 +20,15 @@ public class Brick : MonoBehaviour
         UpdateLabel();
     }
 
-    public void OnHit()
+    public void OnHit(bool forceBreak)
     {
         hitsToBreak--;
+        if (forceBreak)
+            hitsToBreak = 0;
         UpdateLabel();
         AudioManager.Instance.PlayGlassHit();
         if (hitsToBreak <= 0) Break();
     }
-
     void Break()
     {
         if (hitsToBreak <= 0)
