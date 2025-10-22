@@ -237,8 +237,8 @@ public partial class BallController : MonoBehaviour
     {
         if (mainCamera == null || ballTransform == null) return;
 
-        float zDistance = Mathf.Abs(mainCamera.transform.position.z - ballTransform.position.z);
-        Vector3 mouseWorld =
+        var zDistance = Mathf.Abs(mainCamera.transform.position.z - ballTransform.position.z);
+        var mouseWorld =
             mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, zDistance));
         mouseWorld.z = ballTransform.position.z;
 
@@ -270,13 +270,12 @@ public partial class BallController : MonoBehaviour
 
     void CheckPointer(Vector2 screenPos)
     {
-        float distanceToSpritePlane = Mathf.Abs(Camera.main.transform.position.z - 0f); // sprite z = 0
-        Vector3 screenPoint = new Vector3(screenPos.x, screenPos.y, distanceToSpritePlane);
-        Vector3 worldPos3 = Camera.main.ScreenToWorldPoint(screenPoint);
-        Vector2 worldPos = new Vector2(worldPos3.x, worldPos3.y);
+        var distanceToSpritePlane = Mathf.Abs(Camera.main.transform.position.z - 0f); // sprite z = 0
+        var screenPoint = new Vector3(screenPos.x, screenPos.y, distanceToSpritePlane);
+        var worldPos3 = Camera.main.ScreenToWorldPoint(screenPoint);
+        var worldPos = new Vector2(worldPos3.x, worldPos3.y);
 
         var cols = Physics2D.OverlapPointAll(worldPos, hitMask);
         isInputSourceInsidePlayArea = cols.Length > 0;
-        foreach (var c in cols) Debug.Log("Hit: " + c.name + " bounds: " + c.bounds);
     }
 }

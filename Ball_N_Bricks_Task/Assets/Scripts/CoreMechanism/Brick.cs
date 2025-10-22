@@ -19,7 +19,6 @@ public class Brick : MonoBehaviour
         hitsToBreak = brickDefinition.hitsToBreak;
         UpdateLabel();
     }
-
     public void OnHit(bool forceBreak)
     {
         hitsToBreak--;
@@ -29,19 +28,17 @@ public class Brick : MonoBehaviour
         AudioManager.Instance.PlayGlassHit();
         if (hitsToBreak <= 0) Break();
     }
-    void Break()
+    private void Break()
     {
-        if (hitsToBreak <= 0)
-        {
-            AudioManager.Instance.PlayGlassShattering();
-            Score.Instance.IncrementScore(scoreValue);  
-            animator.gameObject.SetActive(true);   
-            animator.SetTrigger("Break");
-            spriteRenderer.enabled = false;
-            collider.enabled = false;
-            hitsToBreakLabel.gameObject.SetActive(false);
-            GridGenerator.Instance.bricksDestroyedThisLevel++;
-        }
+        if (hitsToBreak > 0) return;
+        AudioManager.Instance.PlayGlassShattering();
+        Score.Instance.IncrementScore(scoreValue);  
+        animator.gameObject.SetActive(true);   
+        animator.SetTrigger("Break");
+        spriteRenderer.enabled = false;
+        collider.enabled = false;
+        hitsToBreakLabel.gameObject.SetActive(false);
+        GridGenerator.Instance.bricksDestroyedThisLevel++;
     }
     private void UpdateLabel() => hitsToBreakLabel.text = $"{hitsToBreak}";
 }

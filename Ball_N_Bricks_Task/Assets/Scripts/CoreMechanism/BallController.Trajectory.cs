@@ -7,13 +7,11 @@ public partial class BallController
     public int trajectoryMaxBounces = 10;
     public int trajectoryMaxSegments = 200;
     public float trajectorySkinDistance = 0.02f;
-    public bool trajectoryDebugLogs = false;
     public LayerMask brickLayerMask;
     [Header("Prediction Settings")]
     [Tooltip("Length used for each predicted step / visual forward segment (world units).")]
     public float predictionStepLen = 2f;
 
-// small constants
     private const float DefaultIntersectionEpsilon = 1e-6f;
     private const float DefaultVelocityEpsilon = 1e-8f;
 
@@ -56,11 +54,11 @@ public partial class BallController
         hitPoint = Vector2.zero;
         hitNormal = Vector2.zero;
         tOut = float.MaxValue;
-        bool found = false;
+        var found = false;
 
         if (Mathf.Abs(dir.x) > intersectionEpsilon)
         {
-            float tx = (minX - pos.x) / dir.x;
+            var tx = (minX - pos.x) / dir.x;
             if (tx > intersectionEpsilon)
             {
                 Vector2 p = pos + dir * tx;
@@ -73,7 +71,7 @@ public partial class BallController
                 }
             }
 
-            float tx2 = (maxX - pos.x) / dir.x;
+            var tx2 = (maxX - pos.x) / dir.x;
             if (tx2 > intersectionEpsilon)
             {
                 Vector2 p = pos + dir * tx2;
@@ -89,7 +87,7 @@ public partial class BallController
 
         if (Mathf.Abs(dir.y) > intersectionEpsilon)
         {
-            float ty = (minY - pos.y) / dir.y;
+            var ty = (minY - pos.y) / dir.y;
             if (ty > intersectionEpsilon)
             {
                 Vector2 p = pos + dir * ty;
@@ -102,7 +100,7 @@ public partial class BallController
                 }
             }
 
-            float ty2 = (maxY - pos.y) / dir.y;
+            var ty2 = (maxY - pos.y) / dir.y;
             if (ty2 > intersectionEpsilon)
             {
                 Vector2 p = pos + dir * ty2;
@@ -133,13 +131,12 @@ public partial class BallController
         var radius = GetBallWorldRadius();
 
         var bounds = playAreaCollider.bounds;
-        float inset = radius;
+        var inset = radius;
         float minX = bounds.min.x + inset,
             maxX = bounds.max.x - inset,
             minY = bounds.min.y + inset,
             maxY = bounds.max.y - inset;
 
-        // initial direction (unit vector)
         Vector2 dir = launchVelocity.sqrMagnitude > DefaultVelocityEpsilon
             ? launchVelocity.normalized
             : EstimateDirectionFromCharge();
@@ -152,7 +149,6 @@ public partial class BallController
 
         while (bouncesLeft >= 0 && segments < trajectoryMaxSegments)
         {
-            // compute nearest wall intersection
             if (!ComputeNearestBoxIntersection(pos, dir, minX, maxX, minY, maxY, out var wallHit, out var wallNormal,
                     out var t))
             {
@@ -161,20 +157,18 @@ public partial class BallController
                 break;
             }
 
-            // clamp
             wallHit.x = Mathf.Clamp(wallHit.x, minX, maxX);
             wallHit.y = Mathf.Clamp(wallHit.y, minY, maxY);
 
-            // check for earliest brick along segment pos->wallHit using CircleCastAll and use hit.normal
-            float segmentDist = Vector2.Distance(pos, wallHit);
-            Vector2 castDir = (segmentDist > 0f) ? (wallHit - pos).normalized : dir;
-            float castLen = segmentDist + 0.01f;
-            Vector2 castOrigin = pos;
+            var segmentDist = Vector2.Distance(pos, wallHit);
+            var castDir = (segmentDist > 0f) ? (wallHit - pos).normalized : dir;
+            var castLen = segmentDist + 0.01f;
+            var castOrigin = pos;
 
             var candidates = Physics2D.CircleCastAll(castOrigin, radius + 0.01f, castDir, castLen,
                 brickLayerMask);
-            RaycastHit2D earliestHit = new RaycastHit2D();
-            float bestDist = float.MaxValue;
+            var earliestHit = new RaycastHit2D();
+            var bestDist = float.MaxValue;
             foreach (var h in candidates)
             {
                 if (h.collider == null) continue;
@@ -190,38 +184,33 @@ public partial class BallController
                 var impact = earliestHit.point;
                 var impactNormal = earliestHit.normal.sqrMagnitude > 1e-6f ? earliestHit.normal : Vector2.up;
 
-                // record hit
                 points.Add(new Vector3(impact.x, impact.y, planeZ));
                 segments++;
 
-                // if this is last bounce, stop at hit (no outgoing fragment)
                 if (bouncesLeft <= 1) break;
 
-                // reflect direction using impact normal
                 dir = Vector2.Reflect(dir, impactNormal).normalized;
 
                 // forward visualization (constant)
-                Vector2 forwardPoint = impact + dir * Mathf.Max(predictionStepLen * 0.5f, radius * 0.5f);
+                var forwardPoint = impact + dir * Mathf.Max(predictionStepLen * 0.5f, radius * 0.5f);
                 points.Add(new Vector3(forwardPoint.x, forwardPoint.y, planeZ));
                 segments++;
 
-                float nudge = Mathf.Max(radius * 2f, predictionStepLen);
+                var nudge = Mathf.Max(radius * 2f, predictionStepLen);
                 pos = impact + dir * (trajectorySkinDistance + nudge);
 
                 bouncesLeft--;
                 continue;
             }
 
-            // no brick hit on the way, record wall hit
             points.Add(new Vector3(wallHit.x, wallHit.y, planeZ));
             segments++;
 
-            // if this is last bounce, stop at wall
             if (bouncesLeft <= 1) break;
 
             dir = Vector2.Reflect(dir, wallNormal).normalized;
 
-            Vector2 forwardWall = wallHit + dir * Mathf.Max(predictionStepLen * 0.5f, radius * 0.5f);
+            var forwardWall = wallHit + dir * Mathf.Max(predictionStepLen * 0.5f, radius * 0.5f);
             points.Add(new Vector3(forwardWall.x, forwardWall.y, planeZ));
             segments++;
 

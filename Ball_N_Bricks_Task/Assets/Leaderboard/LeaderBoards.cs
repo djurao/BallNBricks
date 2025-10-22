@@ -18,14 +18,7 @@ public class LeaderBoards : MonoBehaviour
     private User user;
     private void Awake() => Instance = this;
 
-    private void Start()
-    {
-        user = UserCreation.Instance.user;
-        FetchUsers();
-        if(!userList.users.Contains(user))
-            userList.users.Add(user);
-    }
-
+    private void Start() => FetchUsers();
     private void FetchUsers() => userList = SaveLoadLeaderboards.LoadDummyUsers();
     private void SortUsersByScoreForSpecificLevel(int level)
     {
@@ -36,6 +29,7 @@ public class LeaderBoards : MonoBehaviour
     }
     public void OpenLeaderboards(int level, int score)
     {
+        CleanUpPreviousEntries();
         currentLevel = level;
         AddUserScore(level, score);
         leaderboardsPanel.SetActive(true);
@@ -52,7 +46,16 @@ public class LeaderBoards : MonoBehaviour
         DisplayUsers();
     }
 
-    public void AddUserScore(int level, int score) => user.levelScores.Find(l => l.levelID == level).score = score;
+    public void AddUserScore(int level, int score)
+    {
+        user = UserCreation.Instance.user;
+
+        if (user == null) return;
+        if(!userList.users.Contains(user))
+            userList.users.Add(user);
+            
+        user.levelScores.Find(l => l.levelID == level).score = score;
+    }
 
     private void OnDisable() => CleanUpPreviousEntries();
 
@@ -63,7 +66,11 @@ public class LeaderBoards : MonoBehaviour
             var isUsersThumb = sortedUsers[i] == user;  
             CreateThumb(sortedUsers[i], i+1, isUsersThumb);
         }
+        Invoke(nameof(RepositionPlayersLeaderboardThumb), 0.1f);
+    }
 
+    private void RepositionPlayersLeaderboardThumb()
+    {
         if (usersThumb.leaderBoardPosition > lastVisibleThumbEntry)
         {
             usersThumb.transform.SetSiblingIndex(lastVisibleThumbEntry);

@@ -3,6 +3,7 @@ using UnityEngine;
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance;
+    [SerializeField] private AudioListener listener;
     [SerializeField] private AudioSource ballSource;
     [SerializeField] private AudioSource batAudioSource;
     [SerializeField] private AudioSource brickShatteringAudioSource;
@@ -26,9 +27,9 @@ public class AudioManager : MonoBehaviour
     }
     public void Collect() => collectAudioSource.Play();
 
-    public void MuteUnmuteAmbience(bool state)
+    public void MuteUnmuteAudio(bool state)
     {
-        ambienceAudioSource.mute = state;
+        AudioListener.volume = state ? 0f : 1f;
         muteBtn.SetActive(!state);
         unMuteBtn.SetActive(state);
     }
