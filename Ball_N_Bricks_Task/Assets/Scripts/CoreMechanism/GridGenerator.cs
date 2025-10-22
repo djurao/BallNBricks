@@ -114,6 +114,7 @@ namespace LevelGeneration
     {
         public Brick brickPrefab;
         public Color samplingIdentifier;
+        public Color blockColor;
         public int hitsToBreak;
     }
 }

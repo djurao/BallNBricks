@@ -13,8 +13,8 @@ public class Brick : MonoBehaviour
     public int scoreValue = 0;
     public void Init(BrickDefinition brickDefinition)
     {
-        var newColor = brickDefinition.samplingIdentifier;
-        newColor.a = 0.5f;
+        var newColor = brickDefinition.blockColor;
+        newColor.a = 0.8f;
         spriteRenderer.color = newColor;
         hitsToBreak = brickDefinition.hitsToBreak;
         UpdateLabel();
