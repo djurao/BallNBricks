@@ -39,7 +39,8 @@ public class Brick : MonoBehaviour
             animator.SetTrigger("Break");
             spriteRenderer.enabled = false;
             collider.enabled = false;
-            hitsToBreakLabel.gameObject.SetActive(false);   
+            hitsToBreakLabel.gameObject.SetActive(false);
+            GridGenerator.Instance.bricksDestroyedThisLevel++;
         }
     }
     private void UpdateLabel() => hitsToBreakLabel.text = $"{hitsToBreak}";

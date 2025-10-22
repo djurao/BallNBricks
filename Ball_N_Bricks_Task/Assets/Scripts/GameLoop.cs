@@ -11,6 +11,7 @@ public class GameLoop : MonoBehaviour
     [SerializeField]private GridGenerator gridGenerator;
     [SerializeField]private BallController ballController;
 
+    public bool levelInProgress;
     public int currentLevel;
     public GameObject[] attemptUIElements;
     public int attempts;
@@ -28,6 +29,9 @@ public class GameLoop : MonoBehaviour
     [Header("Level Finished")]
     public GameObject levelFinishedPopup;
     public GameObject noEnoughCurrencyPopup;
+    public GameObject levelFailedPopup;
+    public TextMeshProUGUI scoreLevelFailedLabel;
+
     public GameObject confirmApplyModifier;
     public GameObject multiplierAlreadyAppliedPopup;
 
@@ -39,6 +43,7 @@ public class GameLoop : MonoBehaviour
     public int amountToPay;
     public int multiplierPendingForApply;
     public bool multiplierApplied;
+    public bool allBricksDestroyed;
     private void Awake()
     {
         ballController.OnBallsReturnedToBase += SubtractAttempt;
@@ -61,6 +66,7 @@ public class GameLoop : MonoBehaviour
         attempts = maxAttempts;
         UpdateAttemptUIState();
         levelFinishedPopup.SetActive(false);
+        levelFailedPopup.SetActive(false);
         startLevelButton.SetActive(true);
         Score.Instance.ResetScore();
     }
@@ -69,6 +75,17 @@ public class GameLoop : MonoBehaviour
     {
         gridGenerator.PrepareLayout(levelDefinitions[currentLevel]);
         ballController.PrepareBatAndBallLogic();
+        levelInProgress = true;
+    }
+
+    void Update()
+    {
+        if (!levelInProgress) return;
+        allBricksDestroyed = gridGenerator.bricksDestroyedThisLevel == gridGenerator.bricksInstantiated.Count;
+        if (allBricksDestroyed)
+        {
+            LevelFinished();
+        }
     }
 
     private void SubtractAttempt()
@@ -81,15 +98,26 @@ public class GameLoop : MonoBehaviour
 
     private void LevelFinished()
     {
-        levelFinishedPopup.SetActive(true);
+        levelInProgress = false;
         gridGenerator.CleanUpCurrentLevelRemnants();
         ballController.LockBatInteraction();
         scoreThisLevel = Score.Instance.GetScore();
-        UpdateScoreLabel();
-        nextLevelButton.SetActive(currentLevel != levelDefinitions.Count - 1);
-        startOverButton.SetActive(currentLevel == levelDefinitions.Count - 1);
         PowerUps.Instance.DeactivateAllPowerUps();
-        UpdateUserScore();
+        UpdateScoreLabel();
+
+        if (allBricksDestroyed)
+        {
+            levelFinishedPopup.SetActive(true);
+            nextLevelButton.SetActive(currentLevel != levelDefinitions.Count - 1);
+            startOverButton.SetActive(currentLevel == levelDefinitions.Count - 1);
+            UpdateUserScore();
+            ballController.RetractAllBallsToBase();
+        }
+        else
+        {
+            scoreLevelFailedLabel.text = $"Score: {scoreThisLevel}";
+            levelFailedPopup.SetActive(true);
+        }
     }
 
     public void ShowMultiplierAlreadyAppliedPopup(bool state) => multiplierAlreadyAppliedPopup.SetActive(state);

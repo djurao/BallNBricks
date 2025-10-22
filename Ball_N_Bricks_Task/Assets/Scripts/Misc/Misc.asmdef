@@ -2,7 +2,8 @@
     "name": "Misc",
     "rootNamespace": "",
     "references": [
-        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:b8c55f57249626b48ad448a22a81abf2"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

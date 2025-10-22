@@ -1,22 +1,27 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using CoreMechanism;
 
 namespace LevelGeneration
 {
     public class GridGenerator : MonoBehaviour
     {
+        public static GridGenerator Instance;
         public List<BrickDefinition> brickDefinitions;
         public Vector2 cellSize = new Vector2(3f, 1.5f);
         public float verticalBrickLayoutPosition = 0f;
         public List<GameObject> bricksInstantiated;
+        public int bricksDestroyedThisLevel;
+
+        private void Awake() => Instance = this;
         public void PrepareLayout(LevelDefinition levelDefinition)
         {
             // clear previous remnants
             CleanUpCurrentLevelRemnants();
             bricksInstantiated.Clear();
-
+            bricksDestroyedThisLevel = 0;
             var grid = TextureToLevelSampler.CreateGridFromTexture(levelDefinition.levelTexture);
             var cols = grid.GetLength(0);
             var rows = grid.GetLength(1);
@@ -45,7 +50,6 @@ namespace LevelGeneration
                     }
                 }
             }
-
             // spawn power-ups by replacing some bricks
             SpawnPowerUps(levelDefinition);
         }
@@ -58,45 +62,37 @@ namespace LevelGeneration
             if (bricksInstantiated == null || bricksInstantiated.Count == 0)
                 return;
 
-            // Build a list of indices we can choose from
             var availableIndices = new List<int>(bricksInstantiated.Count);
-            for (int i = 0; i < bricksInstantiated.Count; i++)
+            for (var i = 0; i < bricksInstantiated.Count; i++)
                 availableIndices.Add(i);
 
-            // For each configured power-up type
             foreach (var puConfig in levelDefinition.powerUps)
             {
                 if (puConfig == null || puConfig.prefab == null || puConfig.amount <= 0)
                     continue;
 
-                int toSpawn = Mathf.Min(puConfig.amount, availableIndices.Count);
+                var toSpawn = Mathf.Min(puConfig.amount, availableIndices.Count);
 
-                for (int s = 0; s < toSpawn; s++)
+                for (var s = 0; s < toSpawn; s++)
                 {
-                    // pick random index from availableIndices
-                    int listIndex = UnityEngine.Random.Range(0, availableIndices.Count);
-                    int brickIndex = availableIndices[listIndex];
+                    var listIndex = UnityEngine.Random.Range(0, availableIndices.Count);
+                    var brickIndex = availableIndices[listIndex];
                     availableIndices.RemoveAt(listIndex);
 
                     var brickGO = bricksInstantiated[brickIndex];
                     if (brickGO == null)
                         continue;
 
-                    // capture position & rotation, remove/destroy brick
                     var pos = brickGO.transform.position;
                     var rot = brickGO.transform.rotation;
-
                     Destroy(brickGO);
-                    bricksInstantiated[brickIndex] = null; // mark as replaced
-
-                    // instantiate power-up prefab at same place
+                    bricksInstantiated[brickIndex] = null; 
                     var puGO = Instantiate(puConfig.prefab, pos, rot);
-                    // If the power-up prefab should be tracked in bricksInstantiated, you can add it:
                     bricksInstantiated[brickIndex] = puGO;
+                    bricksDestroyedThisLevel++;
                 }
             }
 
-            // Optional: compress bricksInstantiated to remove nulls (keep all spawned objects):
             bricksInstantiated.RemoveAll(item => item == null);
         }
 

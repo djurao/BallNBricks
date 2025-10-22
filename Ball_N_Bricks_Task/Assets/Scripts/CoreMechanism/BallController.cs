@@ -1,16 +1,18 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Misc;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 public partial class BallController : MonoBehaviour
 {
-    private static readonly int Swing = Animator.StringToHash("Swing");
     private static readonly int StopSwinging = Animator.StringToHash("StopSwinging");
+    private static readonly int Charging = Animator.StringToHash("Charging");
 
     [Header("References (assign separate GameObject each)")]
+    public SimpleObjectPooling ballsPool;
     public Transform ballSpawnPosition;
 
     public Transform ballTransform;
@@ -59,6 +61,12 @@ public partial class BallController : MonoBehaviour
 
     private void InitBalls()
     {
+        for (var i = 0; i < maxAmountOfBalls; i++) {
+            var ball = ballsPool.GetObject();
+            ball.transform.position = ballSpawnPosition.position;
+            ball.transform.rotation = ballSpawnPosition.rotation;
+            ballMovements.Add(ball.GetComponent<BallMovement>());
+        }
         foreach (var ball in ballMovements)
         {
             ball.DI(this);
@@ -86,10 +94,11 @@ public partial class BallController : MonoBehaviour
         if (ballsInAction > 0 || inputHeldTime < maxLaunchHeldThreshold) return;
         ballsLaunched = 0;
         retractBallsButton.SetActive(true);
-        swingAnimator.SetTrigger(Swing);
+        swingAnimator.SetBool(Charging, false);
         StopBallsLaunch();
         PlayAudioBatHit();
         launchRoutine = StartCoroutine(LaunchBallsSequential());
+        ResetPowerUI();
     }
 
     private void StopBallsLaunch()
@@ -172,6 +181,8 @@ public partial class BallController : MonoBehaviour
         StopCoroutine(launchRoutine);
         ballsLaunched = 0;
         swingAnimator.SetTrigger(StopSwinging);
+        swingAnimator.SetBool(Charging, false);
+
         foreach (var ball in ballMovements)
         {
             if (ball != null)
@@ -180,24 +191,17 @@ public partial class BallController : MonoBehaviour
             }
         }
     }
-
-    private void ResetBall()
-    {
-        foreach (var ball in ballMovements)
-        {
-            ball.ResetBall();
-        }
-    }
-
     private void OnBeginCharge()
     {
         inputHeldTime = 0;
         launchForce = 0f;
-        SetPowerUI(0f);
+        ResetPowerUI();
     }
 
     private void ContinueCharge()
     {
+        swingAnimator.SetBool(Charging, true);
+
         launchForce = Mathf.Min(launchForce + powerRefillRate * Time.deltaTime, maxLaunchForce);
         var normalized = (maxLaunchForce > 0f) ? (launchForce / maxLaunchForce) : 0f;
         SetPowerUI(normalized);
@@ -209,8 +213,16 @@ public partial class BallController : MonoBehaviour
         var color = powerUpSpriteRenderer.color;
         color.a = Mathf.Clamp01(normalized);
         powerUpSpriteRenderer.color = color;
-        //powerUpSpriteRenderer.transform.localScale = Vector3.one * Mathf.Clamp01(normalized);
     }
+
+    public void ResetPowerUI()
+    {
+        if (powerUpSpriteRenderer == null) return;
+        var color = powerUpSpriteRenderer.color;
+        color.a = 0;
+        powerUpSpriteRenderer.color = color;
+    }
+
     private void OnValidate()
     {
         restitution = Mathf.Clamp01(restitution);

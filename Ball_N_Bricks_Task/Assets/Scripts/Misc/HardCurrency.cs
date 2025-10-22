@@ -1,4 +1,5 @@
 using System;
+using Leaderboard_Module;
 using TMPro;
 using UnityEngine;
 
@@ -12,13 +13,23 @@ namespace Misc
         public int amount;
         public CurrencyPackage[] currencyPackages;
         public TextMeshProUGUI currencyLabel;
+        private UserCreation _userCreation;
         void Awake() => Instance = this;
-        void Start() => UpdateUILabel();
+
+        void Start()
+        {
+            _userCreation = UserCreation.Instance;
+            if(_userCreation.user != null )amount = _userCreation.user.hardCurrency;
+            UpdateUILabel();
+        }
+
         public void OpenClosePanel(bool state) => purchaseCurrencyPanel.SetActive(state);
         public void PurchasePackage(int packageID)
         {
             if (!TransactionSuccessful()) return;
             amount += currencyPackages[packageID].amount;
+            if(_userCreation.user != null ) _userCreation.user.hardCurrency = amount;
+            _userCreation.SaveUser();
             UpdateUILabel();
             purchaseSuccessPanel.SetActive(true);
         }
@@ -27,7 +38,9 @@ namespace Misc
         public void DeductCurrency(int amountToPay)
         {
             amount -= amountToPay;
-            UpdateUILabel();        
+            if(_userCreation.user != null ) _userCreation.user.hardCurrency = amount;
+            _userCreation.SaveUser();
+            UpdateUILabel();    
         }
     }
     [Serializable]
