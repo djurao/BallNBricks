@@ -8,7 +8,6 @@ namespace Misc
     {
         ChromeBall = 0
     }
-
     public class PowerUps : MonoBehaviour
     {
         public static PowerUps Instance;
@@ -18,14 +17,10 @@ namespace Misc
         public Sprite normalBall;
         public Sprite chromeBall;
         private void Awake() => Instance = this;
-
-        public void ReFillPowerUp(PowerUpType  powerUpType, int amountToFill)
-        {
-            powerUps[(int)powerUpType].Refill(amountToFill);
-        }
-
+        public void ReFillPowerUp(PowerUpType  powerUpType, int amountToFill) => powerUps[(int)powerUpType].Refill(amountToFill);
         public void ActivatePowerUp(int i)
         {
+            
             var powerUp = powerUps[i];
             if (powerUp.amount <= 0) return;
             powerUp.amount--;
@@ -36,7 +31,6 @@ namespace Misc
                 UpdateBallGraphics(chromeBall);
             }
         }
-        
         public void DeactivatePowerUp(int i)
         {
             var powerUp = powerUps[i];
@@ -46,7 +40,6 @@ namespace Misc
                 UpdateBallGraphics(normalBall);
             }
         }
-
         private void UpdateBallGraphics(Sprite sprite)
         {
             foreach (var ball in visualBallsSR)
@@ -54,7 +47,6 @@ namespace Misc
                 ball.sprite = sprite;
             }
         }
-
         public void DeactivateAllPowerUps()
         {
             chromeBallActive = false;
@@ -67,7 +59,6 @@ namespace Misc
         public PowerUpType type;
         public int amount;
         public GameObject iconInThumb;
-        
         public void Refill(int amountToAdd)
         {
             amount +=  amountToAdd;

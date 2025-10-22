@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using CoreMechanism;
+using Misc;
 
 namespace LevelGeneration
 {
@@ -10,11 +11,12 @@ namespace LevelGeneration
     {
         public static GridGenerator Instance;
         public List<BrickDefinition> brickDefinitions;
+        public Transform bricksParent;
         public Vector2 cellSize = new Vector2(3f, 1.5f);
         public float verticalBrickLayoutPosition = 0f;
         public List<GameObject> bricksInstantiated;
         public int bricksDestroyedThisLevel;
-
+        public SimpleObjectPooling bricksPool; // TODO Implement more complex <T> object pooling for bricks
         private void Awake() => Instance = this;
         public void PrepareLayout(LevelDefinition levelDefinition)
         {
@@ -26,7 +28,6 @@ namespace LevelGeneration
             var cols = grid.GetLength(0);
             var rows = grid.GetLength(1);
 
-            // center whole grid on X = 0: compute starting X for first cell center
             var totalWidth = cols * cellSize.x;
             var xStart = -0.5f * totalWidth + 0.5f * cellSize.x;
 
@@ -43,7 +44,7 @@ namespace LevelGeneration
                             var worldX = xStart + x * cellSize.x;
                             var worldY = y * cellSize.y + 0.5f * cellSize.y + verticalBrickLayoutPosition;
                             var newBrick = Instantiate(brickDefinitions[i].brickPrefab, new Vector3(worldX, worldY, 0f),
-                                Quaternion.identity);
+                                Quaternion.identity, bricksParent);
                             newBrick.Init(brickDefinitions[i]);
                             bricksInstantiated.Add(newBrick.gameObject);
                         }

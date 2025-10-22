@@ -7,7 +7,7 @@ namespace Misc
     {
         public GameObject prefab;
         public List<GameObject> pool;
-
+        public Transform initialParent;
         public GameObject GetObject()
         {
             foreach (var @object in pool)
@@ -22,7 +22,7 @@ namespace Misc
         }
         private GameObject CreateNewInstance()
         {
-            var newObj = Instantiate(prefab);
+            var newObj = Instantiate(prefab,initialParent);
             AddToPool(newObj);
             return newObj;
         }

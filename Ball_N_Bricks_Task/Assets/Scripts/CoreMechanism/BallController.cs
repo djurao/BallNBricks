@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using CoreMechanism;
 using Misc;
 using TMPro;
 using UnityEngine;
@@ -14,6 +15,7 @@ public partial class BallController : MonoBehaviour
     [Header("References (assign separate GameObject each)")]
     public SimpleObjectPooling ballsPool;
     public Transform ballSpawnPosition;
+    public Transform basketPosition;
 
     public Transform ballTransform;
     public CircleCollider2D  ballCollider;
@@ -69,7 +71,7 @@ public partial class BallController : MonoBehaviour
         }
         foreach (var ball in ballMovements)
         {
-            ball.DI(this);
+            ball.DI(this, ballSpawnPosition, playAreaCollider, basketPosition);
         }
     }
     public void PrepareBatAndBallLogic()
