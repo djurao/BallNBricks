@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CoreMechanism;
 using LevelGeneration;
 using Misc;
 using TMPro;
@@ -18,8 +19,11 @@ public class GameLoop : MonoBehaviour
     [Header("UI")]
     public GameObject startLevelButton;
     public TextMeshProUGUI currentLevelLabel;
+    public TextMeshProUGUI currentLevelLeaderboardsLabel;
     public GameObject nextLevelButton;
     public GameObject startOverButton;
+    public GameObject newBestScorePopup;
+    public TextMeshProUGUI newBestScoreLabel;
 
     [Header("Level Finished")]
     public GameObject levelFinishedPopup;
@@ -38,8 +42,13 @@ public class GameLoop : MonoBehaviour
     private void Awake()
     {
         ballController.OnBallsReturnedToBase += SubtractAttempt;
+    }
+
+    private void Start()
+    {
         PrepareLevel(0);
     }
+
     void OnDestroy() => ballController.OnBallsReturnedToBase -= SubtractAttempt;
 
     public void PrepareLevel(int id)
@@ -47,6 +56,7 @@ public class GameLoop : MonoBehaviour
         multiplierApplied = false;
         var levelNormalized = currentLevel + 1;
         currentLevelLabel.text = $"Level {levelNormalized}";
+        currentLevelLeaderboardsLabel.text = $"Leaderboards for Level {levelNormalized}";
         maxAttempts = levelDefinitions[currentLevel].allowedAttempts;
         attempts = maxAttempts;
         UpdateAttemptUIState();
@@ -79,7 +89,7 @@ public class GameLoop : MonoBehaviour
         nextLevelButton.SetActive(currentLevel != levelDefinitions.Count - 1);
         startOverButton.SetActive(currentLevel == levelDefinitions.Count - 1);
         PowerUps.Instance.DeactivateAllPowerUps();
-        // inject score
+        UpdateUserScore();
     }
 
     public void ShowMultiplierAlreadyAppliedPopup(bool state) => multiplierAlreadyAppliedPopup.SetActive(state);
@@ -107,7 +117,6 @@ public class GameLoop : MonoBehaviour
             oldScoreLabelApplyPopup.text = $"Score: {scoreThisLevel}";
             newScoreLabelApplyPopup.text = $"New Score: {scoreThisLevel*multiplierPendingForApply}";
             scoreLabelFinishPopup.color = Color.green;
-
             OpenCloseConfirmationPanel(true);
         }
         else
@@ -124,6 +133,19 @@ public class GameLoop : MonoBehaviour
         multiplierApplied = true;
         FinalizeTransaction();
         OpenCloseConfirmationPanel(false);
+        UpdateUserScore();
+    }
+
+    private void UpdateUserScore()
+    {
+        if (UserCreation.Instance.user.levelScores[currentLevel].score < scoreThisLevel)
+        {
+            newBestScorePopup.SetActive(true);
+            newBestScoreLabel.text = $"New Best: {scoreThisLevel}!";
+            LeaderBoards.Instance.AddUserScore(currentLevel, scoreThisLevel);
+        }
+        LeaderBoards.Instance.RefreshLeaderBoard(currentLevel, scoreThisLevel);
+        UserCreation.Instance.SaveUser();
     }
 
     private void OpenCloseConfirmationPanel(bool state) => confirmApplyModifier.SetActive(state);
